@@ -27,6 +27,7 @@ public class Scanner {
       Token token;
       int state;
       char chr;
+      String lexema;
 
       if (pos == input.length())
          return new Token(Names.EOF);
@@ -42,16 +43,18 @@ public class Scanner {
                if (getPos() == getInput().length())
                   return new Token(Names.EOF);
 
-               else if (Character.isLetterOrDigit(chr) || isUnderscore(chr))
+               else if (Character.isLetter(chr) || isUnderscore(chr))
                   state = 1;
                else if (chr == ' ')
                   state = 2;
+               else if (Character.isDigit(chr))
+                  state = 3;
                else
                   lexicalError();
                pos ++;
                break;
             case 1:  // ID
-               String lexema = "";
+               lexema = "";
                lexema += String.valueOf(chr);
 
                while (getPos() < getInput().length()) {
@@ -60,8 +63,7 @@ public class Scanner {
                   if (Character.isLetterOrDigit(chr) || isUnderscore(chr)) {
                      lexema += String.valueOf(chr);
                      incrementPos();
-                  } else
-                     break;
+                  } else break;
                }
                state = 0;
                return new Token(Names.ID, lexema);
@@ -75,6 +77,21 @@ public class Scanner {
                }
                state = 0;
                break;
+            case 3:  // Int
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               while (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+
+                  if (Character.isDigit(chr)) {
+                     lexema += String.valueOf(chr);
+                     incrementPos();
+                  } else break;
+               }
+
+               state = 0;
+               return new Token(Names.INTEGER_LITERAL, lexema);
             default:
                lexicalError();
          }
