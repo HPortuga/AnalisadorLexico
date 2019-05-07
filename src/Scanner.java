@@ -49,10 +49,13 @@ public class Scanner {
                   state = 2;
                else if (Character.isDigit(chr))
                   state = 3;
+               else if (isSeparator(chr))
+                  state = 4;
                else
                   lexicalError();
                pos ++;
                break;
+
             case 1:  // ID
                lexema = "";
                lexema += String.valueOf(chr);
@@ -67,6 +70,7 @@ public class Scanner {
                }
                state = 0;
                return new Token(Names.ID, lexema);
+
             case 2:  // Espaço em branco
                while (getPos() < getInput().length()) {
                   chr = input.charAt(getPos());
@@ -77,6 +81,7 @@ public class Scanner {
                }
                state = 0;
                break;
+
             case 3:  // Int
                lexema = "";
                lexema += String.valueOf(chr);
@@ -89,13 +94,32 @@ public class Scanner {
                      incrementPos();
                   } else break;
                }
-
                state = 0;
                return new Token(Names.INTEGER_LITERAL, lexema);
+
+            case 4:  // Separador
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               while (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+
+                  if (isSeparator(chr)) {
+                     lexema += String.valueOf(chr);
+                     incrementPos();
+                  } else break;
+               }
+               state = 0;
+               return new Token(Names.SEP, lexema);
             default:
                lexicalError();
          }
       }
+   }
+
+   private boolean isSeparator(char chr) {
+      return chr == '(' || chr == ')' || chr == '[' || chr == ']'
+      || chr == '{' || chr == '}' || chr == ';' || chr == '.' || chr == ',';
    }
 
    private void incrementPos() {
