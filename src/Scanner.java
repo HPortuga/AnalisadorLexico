@@ -1,3 +1,5 @@
+import javax.naming.Name;
+
 public class Scanner {
    private String input;
    private int pos;
@@ -35,7 +37,7 @@ public class Scanner {
       state = 0;
       chr = input.charAt(pos);
       while(true) {
-         if (getPos() >= getInput().length())
+         if (getPos() > getInput().length())
             return new Token(Names.EOF);
 
          switch (state) {
@@ -51,6 +53,12 @@ public class Scanner {
                   state = 3;
                else if (isSeparator(chr))
                   state = 4;
+               else if (isOperadorSimples(chr))
+                  state = 5;
+               else if (chr == '<' || chr == '>' || chr == '=')
+                  state = 6;
+               else if (chr == '!')
+                  state = 7;
                else
                   lexicalError();
                pos ++;
@@ -101,16 +109,43 @@ public class Scanner {
                lexema = "";
                lexema += String.valueOf(chr);
 
-               while (getPos() < getInput().length()) {
-                  chr = input.charAt(getPos());
-
-                  if (isSeparator(chr)) {
-                     lexema += String.valueOf(chr);
-                     incrementPos();
-                  } else break;
-               }
                state = 0;
                return new Token(Names.SEP, lexema);
+
+            case 5:  // Operadores Simples
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               state = 0;
+               return new Token(Names.OP, lexema);
+
+            case 6:  // Operadores <, >, =, <=, >=, ==
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               chr = input.charAt(getPos());
+               if (chr == '=') {
+                  lexema += String.valueOf(chr);
+                  incrementPos();
+                  state = 0;
+                  return new Token(Names.OP, lexema);
+               } else {
+                  incrementPos();
+                  state = 0;
+                  return new Token(Names.OP, lexema);
+               }
+
+            case 7:  // !=
+               lexema = "";
+               lexema += String.valueOf(chr);
+               char next = input.charAt(getPos());
+               if (next != '=')
+                  break;
+               else {
+                  lexema += String.valueOf(next);
+                  state = 0;
+                  return new Token(Names.OP, lexema);
+               }
             default:
                lexicalError();
          }
@@ -120,6 +155,10 @@ public class Scanner {
    private boolean isSeparator(char chr) {
       return chr == '(' || chr == ')' || chr == '[' || chr == ']'
       || chr == '{' || chr == '}' || chr == ';' || chr == '.' || chr == ',';
+   }
+
+   private boolean isOperadorSimples(char chr) {
+      return chr == '+' || chr == '-' || chr == '*' || chr == '/' || chr == '%';
    }
 
    private void incrementPos() {
