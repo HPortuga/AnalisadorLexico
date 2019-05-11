@@ -1,5 +1,3 @@
-import javax.naming.Name;
-
 public class Scanner {
    private String input;
    private int pos;
@@ -31,7 +29,7 @@ public class Scanner {
       char chr;
       String lexema;
 
-      if (pos == input.length())
+      if (pos >= input.length())
          return new Token(Names.EOF);
 
       state = 0;
@@ -42,7 +40,7 @@ public class Scanner {
 
          switch (state) {
             case 0:
-               if (getPos() == getInput().length())
+               if (getPos() >= getInput().length())
                   return new Token(Names.EOF);
 
                else if (Character.isLetter(chr) || isUnderscore(chr))
@@ -51,17 +49,22 @@ public class Scanner {
                   state = 2;
                else if (Character.isDigit(chr))
                   state = 3;
-               else if (isSeparator(chr))
+               else if (chr == '<' || chr == '>' || chr == '!')
                   state = 4;
-               else if (isOperadorSimples(chr))
+               else if (chr == '=')
                   state = 5;
-               else if (chr == '<' || chr == '>' || chr == '=')
+               else if (chr == '+' || chr == '-')
                   state = 6;
-               else if (chr == '!')
+               else if (chr == '*' || chr == '/' || chr == '%')
                   state = 7;
+               else if (isSeparator(chr))
+                  state = 8;
+               else if (chr == '"')
+                  state = 9;
                else
                   lexicalError();
-               pos ++;
+
+               incrementPos();
                break;
 
             case 1:  // ID
@@ -72,21 +75,23 @@ public class Scanner {
                   chr = input.charAt(getPos());
 
                   if (Character.isLetterOrDigit(chr) || isUnderscore(chr)) {
-                     lexema += String.valueOf(chr);
                      incrementPos();
+                     lexema += String.valueOf(chr);
                   } else break;
                }
+
                state = 0;
                return new Token(Names.ID, lexema);
 
             case 2:  // Espaço em branco
                while (getPos() < getInput().length()) {
                   chr = input.charAt(getPos());
-                  if (chr == ' ')
+                  if (chr == ' ' || chr == '\n')
                      incrementPos();
                   else
                      break;
                }
+
                state = 0;
                break;
 
@@ -102,50 +107,105 @@ public class Scanner {
                      incrementPos();
                   } else break;
                }
+
                state = 0;
                return new Token(Names.INTEGER_LITERAL, lexema);
 
-            case 4:  // Separador
+            case 4:  // RELOP
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               if (getPos() < getInput().length()) {
+                  char nextChar = input.charAt(getPos());
+                  if (chr == '!' && nextChar != '=')
+                     lexicalError();
+
+                  chr = input.charAt(getPos());
+                  if (chr == '=') {
+                     lexema += String.valueOf(chr);
+                     state = 0;
+                     incrementPos();
+                     return new Token(Names.RELOP, lexema);
+                  }
+               }
+
+               state = 0;
+               return new Token(Names.RELOP, lexema);
+
+            case 5:  // ATTR
+               lexema = "";
+               lexema += String.valueOf(chr);
+
+               if (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+                  if (chr == '=') {
+                     state = 4;
+                     break;
+                  }
+               }
+
+               state = 0;
+               return new Token(Names.ATTR, lexema);
+
+            case 6:  // OPNUM
                lexema = "";
                lexema += String.valueOf(chr);
 
                state = 0;
-               return new Token(Names.SEP, lexema);
+               return new Token(Names.OPNUM, lexema);
 
-            case 5:  // Operadores Simples
+            case 7:  // OPUN
                lexema = "";
                lexema += String.valueOf(chr);
 
                state = 0;
-               return new Token(Names.OP, lexema);
+               return new Token(Names.OPUN, lexema);
 
-            case 6:  // Operadores <, >, =, <=, >=, ==
+            case 8:  // Separador
                lexema = "";
                lexema += String.valueOf(chr);
 
-               chr = input.charAt(getPos());
-               if (chr == '=') {
+               state = 0;
+               if (chr == '(')
+                  return new Token(Names.LPAREN, lexema);
+               else if (chr == ')')
+                  return new Token(Names.RPAREN, lexema);
+               else if (chr == '[')
+                  return new Token(Names.LSBR, lexema);
+               else if (chr == ']')
+                  return new Token(Names.RSBR, lexema);
+               else if (chr == '{')
+                  return new Token(Names.LCBR, lexema);
+               else if (chr == '}')
+                  return new Token(Names.RCBR, lexema);
+               else if (chr == ',')
+                  return new Token(Names.COMMA, lexema);
+               else if (chr == '.')
+                  return new Token(Names.DOT, lexema);
+               else
+                  return new Token(Names.SEMICOLON, lexema);
+
+            case 9:  // String
+               lexema = "";
+               lexema += String.valueOf(chr);
+               boolean finalizouString = false;
+
+               while (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
                   lexema += String.valueOf(chr);
                   incrementPos();
-                  state = 0;
-                  return new Token(Names.OP, lexema);
-               } else {
-                  incrementPos();
-                  state = 0;
-                  return new Token(Names.OP, lexema);
+                  if (chr == '"') {
+                     finalizouString = true;
+                     break;
+                  }
                }
 
-            case 7:  // !=
-               lexema = "";
-               lexema += String.valueOf(chr);
-               char next = input.charAt(getPos());
-               if (next != '=')
-                  break;
-               else {
-                  lexema += String.valueOf(next);
-                  state = 0;
-                  return new Token(Names.OP, lexema);
-               }
+               state = 0;
+               if (finalizouString)
+                  return new Token(Names.STRING, lexema);
+               else
+                  lexicalError();
+
             default:
                lexicalError();
          }
@@ -157,13 +217,7 @@ public class Scanner {
       || chr == '{' || chr == '}' || chr == ';' || chr == '.' || chr == ',';
    }
 
-   private boolean isOperadorSimples(char chr) {
-      return chr == '+' || chr == '-' || chr == '*' || chr == '/' || chr == '%';
-   }
-
-   private void incrementPos() {
-      setPos(getPos() + 1);
-   }
+   private void incrementPos() { setPos(getPos() + 1); }
 
    private void lexicalError() {
       System.out.println("Token mal formado");
@@ -171,6 +225,6 @@ public class Scanner {
    }
 
    private boolean isUnderscore(char chr) {
-      return (chr == 95);
+      return (chr == '_');
    }
 }
