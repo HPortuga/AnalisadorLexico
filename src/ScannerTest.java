@@ -290,6 +290,22 @@ class ScannerTest {
       assertIterableEquals(listaEsperada, listaRetornada);
    }
 
+   @Test
+   void deve_reconhecer_comentarios_em_bloco() {
+      Scanner scanner = new Scanner("asd /*isto\neh\num\ncomentario*/isto\nnão");
+      List<String> listaEsperada = Stream.of(
+            new Token(Names.ID, "asd"),
+            new Token(Names.ID, "isto"),
+            new Token(Names.ID, "não"),
+            eof)
+            .map(Token::toString)
+            .collect(Collectors.toList());
+
+      List<String> listaRetornada = analisar(scanner, listaEsperada);
+
+      assertIterableEquals(listaEsperada, listaRetornada);
+   }
+
    private List<String> analisar(Scanner scanner, List<String> listaEsperada) {
       List<String> listaRetornada = new ArrayList<>();
 

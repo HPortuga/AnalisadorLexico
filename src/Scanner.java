@@ -164,6 +164,10 @@ public class Scanner {
                      state = 10;
                      break;
                   }
+                  else if (chr == '*') {
+                     state = 11;
+                     break;
+                  }
                }
 
                state = 0;
@@ -227,6 +231,22 @@ public class Scanner {
                state = 0;
                break;
 
+            case 11:    // Comentário em bloco
+               while (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+                  incrementPos();
+                  if (chr == '*') {
+                     chr = input.charAt(getPos());
+                     if (chr == '/') {
+                        incrementPos();
+                        chr = input.charAt(getPos());
+                        break;
+                     }
+                  }
+               }
+
+               state = 0;
+               break;
 
             default:
                lexicalError();
