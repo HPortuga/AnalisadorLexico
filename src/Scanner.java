@@ -45,7 +45,7 @@ public class Scanner {
 
                else if (Character.isLetter(chr) || isUnderscore(chr))
                   state = 1;
-               else if (chr == ' ')
+               else if (chr == ' ' || chr == '\n')
                   state = 2;
                else if (Character.isDigit(chr))
                   state = 3;
@@ -158,6 +158,14 @@ public class Scanner {
                lexema = "";
                lexema += String.valueOf(chr);
 
+               if (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+                  if (chr == '/') {
+                     state = 10;
+                     break;
+                  }
+               }
+
                state = 0;
                return new Token(Names.OPUN, lexema);
 
@@ -205,6 +213,20 @@ public class Scanner {
                   return new Token(Names.STRING, lexema);
                else
                   lexicalError();
+
+            case 10:    // Comentário em linha
+               while (getPos() < getInput().length()) {
+                  chr = input.charAt(getPos());
+                  incrementPos();
+                  if (chr == '\n') {
+                     chr = input.charAt(getPos());
+                     break;
+                  }
+               }
+
+               state = 0;
+               break;
+
 
             default:
                lexicalError();

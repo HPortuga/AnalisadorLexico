@@ -274,6 +274,22 @@ class ScannerTest {
       assertIterableEquals(listaEsperada, listaRetornada);
    }
 
+   @Test
+   void deve_reconhecer_comentarios_em_linha() {
+      Scanner scanner = new Scanner("aba 89 // a [ ] ;\ncas0");
+      List<String> listaEsperada = Stream.of(
+            new Token(Names.ID, "aba"),
+            new Token(Names.INTEGER_LITERAL, "89"),
+            new Token(Names.ID, "cas0"),
+            eof)
+            .map(Token::toString)
+            .collect(Collectors.toList());
+
+      List<String> listaRetornada = analisar(scanner, listaEsperada);
+
+      assertIterableEquals(listaEsperada, listaRetornada);
+   }
+
    private List<String> analisar(Scanner scanner, List<String> listaEsperada) {
       List<String> listaRetornada = new ArrayList<>();
 
